@@ -139,3 +139,100 @@ delimiter ;
 SET @message = '';
 CALL getDepartmentMessage('217', @message);
 SELECT @message;
+
+-- -------------------------------------------------------------------
+-- while 활용
+delimiter //
+
+CREATE OR REPLACE PROCEDURE calculateSumUpTo (
+    IN max_num INT,
+    OUT sum_result INT 
+)
+BEGIN
+    DECLARE current_num INT DEFAULT 1;
+    DECLARE total_sum INT DEFAULT 0;
+    
+    while current_num <= max_num DO
+        SET total_sum = total_sum + current_num;
+        SET current_num = current_num + 1;
+    END while;
+    
+    SET sum_result = total_sum;
+END //
+
+delimiter ;
+
+SET @result = 0;
+CALL calculateSumUpTo(100, @result);
+SELECT @result;
+
+-- ----------------------------------------------------
+-- 예외 처리
+delimiter //
+CREATE OR REPLACE PROCEDURE divideNumbers(
+   IN numerator DOUBLE,
+   IN denominator DOUBLE,
+   OUT result DOUBLE 
+)
+BEGIN
+    DECLARE division_by_zero CONDITION FOR SQLSTATE '45000';
+    DECLARE exit handler FOR division_by_zero
+    begin
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '0으로 나눌 수 없습니다.';
+    END;
+    
+    if denominator = 0 then
+        SIGNAL division_by_zero;
+    ELSE 
+        SET result = numerator / denominator;
+    END if;
+END //
+delimiter ;
+
+SET @result = 0;
+CALL divideNumbers(10, 2, @result);
+SELECT @result;
+CALL divideNumbers(10, 0, @result);
+SELECT @result;
+
+-- ------------------------------------------------------------------
+-- stored function
+delimiter //
+CREATE OR REPLACE FUNCTION getAnnualSalary(
+    id VARCHAR(3)
+)
+RETURNS INTEGER
+DETERMINISTIC
+BEGIN
+    DECLARE monthly_salary INTEGER;
+    DECLARE annual_salary INTEGER;
+    
+    SELECT salary INTO monthly_salary
+      FROM employee
+     WHERE emp_id = id;
+   
+    SET annual_salary = monthly_salary * 12;
+    
+    RETURN annual_salary;
+END //
+delimiter ;
+
+SELECT
+       emp_name
+     , getAnnualSalary(emp_id) AS '연봉'
+  FROM employee;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
